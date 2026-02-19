@@ -6,150 +6,132 @@ gui:
   showPanelJumps: true
   showBottomLine: false
   nerdFontsVersion: "3"
-  timeFormat: '06-01-02' #ref https://pkg.go.dev/time#Time.Format
-  shortTimeFormat: '3:04PM'
-
+  timeFormat: "06-01-02" #ref https://pkg.go.dev/time#Time.Format
+  shortTimeFormat: "3:04PM"
   branchColors:
-    'prod': '#A459D1'
-    'hotfix': '#A94656'
-    'release': '#FFB84C'
-    'feature': '#555555'
-    'deploy': '#B0B0B0'
-    'master': 'white'
-    'main': 'white'
-
+    "prod": "#A459D1"
+    "hotfix": "#A94656"
+    "release": "#FFB84C"
+    "feature": "#555555"
+    "deploy": "#B0B0B0"
+    "master": "white"
+    "main": "white"
   authorColors:
-    'Nick Lee (이동호)': '#E5C07B'
-    '이동호': '#E5C07B'
-    'Dan Jeong (정구열)': '#30E3DF'
-    'jeongguyeol': '#30E3DF'
-    'MJ Jo(조민지)': '#B05A7A'             
-    'minji': '#B05A7A'
-    'Jinwoong Hwang (황진웅)': '#77D970'
-    'woong': '#77D970'
-    'deptno': white
-    '이봉': white
-    'Leo Lee (이봉균)': white
-    '*': '#B0B0B0'
-
+    "deptno": white
   #ref https://github.com/catppuccin/lazygit/blob/65c3b60aafc12b2c88494e012dbb1404086484dd/themes-mergable/frappe/frappe-rosewater.yml
-  theme: 
+  theme:
     activeBorderColor:
-      - '#f2d5cf'
+      - "#f2d5cf"
       - bold
     inactiveBorderColor:
-      - '#a5adce'
+      - "#a5adce"
     optionsTextColor:
-      - '#8caaee'
+      - "#8caaee"
     selectedLineBgColor:
-      - '#414559'
+      - "#414559"
     selectedRangeBgColor:
-      - '#414559'
+      - "#414559"
     cherryPickedCommitBgColor:
-      - '#51576d'
+      - "#51576d"
     cherryPickedCommitFgColor:
-      - '#f2d5cf'
+      - "#f2d5cf"
     unstagedChangesColor:
-      - '#e78284'
+      - "#e78284"
     defaultFgColor:
-      - '#c6d0f5'
+      - "#c6d0f5"
     searchingActiveBorderColor:
-      - '#e5c890'
-
+      - "#e5c890"
 git:
-  paging:
-    colorArg: always
-    pager: delta --paging=never
+  pagers:
+    - colorArg: always
+      pager: delta --paging=never
   merging:
-    args: '--no-ff'
+    args: "--no-ff"
   commitPrefixes:
     zigbang-client:
-      pattern: "^\\w+\\/(\\w+-\\w+).*"
-      replace: '[$1] '
+      - pattern: "^\\w+\\/(\\w+-\\w+).*"
+        replace: "[$1] "
     s.zigbang.com:
-      pattern: "^\\w+\\/(\\w+-\\w+).*"
-      replace: '[$1] '
+      - pattern: "^\\w+\\/(\\w+-\\w+).*"
+        replace: "[$1] "
     house-partners-client:
-      pattern: "^\\w+\\/(\\w+-\\w+).*"
-      replace: '[$1] '
+      - pattern: "^\\w+\\/(\\w+-\\w+).*"
+        replace: "[$1] "
     single-page:
-      pattern: "^\\w+\\/(\\w+-\\w+).*"
-      replace: '[$1] '
+      - pattern: "^\\w+\\/(\\w+-\\w+).*"
+        replace: "[$1] "
   mainBranches: [master, main]
-  autoRefresh: false
-  autoFetch: false
-
+  autoRefresh: true
+  autoFetch: true
 keybinding:
   universal:
-    quit: '<c-c>'
-    togglePanel: '<tab>'
-    nextTab: 'l'
-    prevTab: 'h'
-    nextBlock-alt: ''
-    prevBlock-alt: ''
-    nextScreenMode: '='
-    prevScreenMode: '-'
-
+    quit: "<c-c>"
+    togglePanel: "<tab>"
+    nextTab: "l"
+    prevTab: "h"
+    nextBlock-alt: ""
+    prevBlock-alt: ""
+    nextScreenMode: "="
+    prevScreenMode: "-"
 customCommands:
-- key: a
-  command: 'git pull --rebase --autostash'
-  context: localBranches
-- key: a
-  command: 'git la --author={{.Form.author | quote}}'
-  context: commits
-  description: 'logs by author'
-  subprocess: true
-  prompts:
-    - type: 'input'
-      title: 'author'
-      key: 'author'
-      suggestions:
-        preset: authors
-- key: b
-  command: 'tig blame {{.SelectedFile.Name}}'
-  context: files
-  description: 'blame'
-  subprocess: true
-- key: G
-  command: 'gh pr list -w --{{.Form.To}} {{.SelectedLocalBranch.Name}}'
-  context: localBranches
-  description: 'open github pr'
-  subprocess: true
-  prompts:
-    - type: 'menu'
-      title: '* {{.SelectedLocalBranch.Name}}?'
-      key: 'To'
-      options:
-        - name: 'base'
-          value: 'base'
-        - name: 'head'
-          value: 'head'
-- key: G
-  command: 'gh pr list -w --{{.Form.To}} {{.SelectedRemoteBranch.Name}}'
-  context: remoteBranches
-  description: 'open github pr'
-  subprocess: true
-  prompts:
-    - type: 'menu'
-      title: '* {{.SelectedLocalBranch.Name}}?'
-      key: 'To'
-      options:
-        - name: 'base'
-          value: 'base'
-        - name: 'head'
-          value: 'head'
-- key: G
-  command: 'gh pr list -w --{{.Form.To}} {{.SelectedLocalBranch.Name}}'
-  context: commits
-  description: 'open github pr'
-  subprocess: true
-  prompts:
-    - type: 'menu'
-      title: '* {{.SelectedLocalBranch.Name}}?'
-      key: 'To'
-      options:
-        - name: 'base'
-          value: 'base'
-        - name: 'head'
-          value: 'head'
-
+  - key: a
+    command: "git pull --rebase --autostash"
+    context: localBranches
+  - key: a
+    command: "git la --author={{.Form.author | quote}}"
+    context: commits
+    description: "logs by author"
+    prompts:
+      - type: "input"
+        title: "author"
+        key: "author"
+        suggestions:
+          preset: authors
+    output: terminal
+  - key: b
+    command: "tig blame {{.SelectedFile.Name}}"
+    context: files
+    description: "blame"
+    output: terminal
+  - key: G
+    command: "gh pr list -w --{{.Form.To}} {{.SelectedLocalBranch.Name}}"
+    context: localBranches
+    description: "open github pr"
+    prompts:
+      - type: "menu"
+        title: "* {{.SelectedLocalBranch.Name}}?"
+        key: "To"
+        options:
+          - name: "base"
+            value: "base"
+          - name: "head"
+            value: "head"
+    output: terminal
+  - key: G
+    command: "gh pr list -w --{{.Form.To}} {{.SelectedRemoteBranch.Name}}"
+    context: remoteBranches
+    description: "open github pr"
+    prompts:
+      - type: "menu"
+        title: "* {{.SelectedLocalBranch.Name}}?"
+        key: "To"
+        options:
+          - name: "base"
+            value: "base"
+          - name: "head"
+            value: "head"
+    output: terminal
+  - key: G
+    command: "gh pr list -w --{{.Form.To}} {{.SelectedLocalBranch.Name}}"
+    context: commits
+    description: "open github pr"
+    prompts:
+      - type: "menu"
+        title: "* {{.SelectedLocalBranch.Name}}?"
+        key: "To"
+        options:
+          - name: "base"
+            value: "base"
+          - name: "head"
+            value: "head"
+    output: terminal
