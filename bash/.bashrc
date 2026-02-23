@@ -8,7 +8,24 @@ if [ -f .env ]; then
 fi
 
 wt() {
-  set -euo pipefail
+  # wt 함수 내부에서만 엄격 모드를 사용하고,
+  # 호출한 현재 쉘의 옵션은 영구적으로 변경하지 않도록 한다.
+  # set -euo pipefail 이 인터랙티브 쉘에 그대로 남아 있으면
+  # 이후 명령이 실패할 때 쉘이 종료되어 tmux가 꺼진 것처럼 보일 수 있다.
+  local __wt_shell_opts
+  __wt_shell_opts="$(set +o 2>/dev/null || true)"
+
+  # bash/zsh 모두에서 동작하도록 wt 함수 내부에서만 엄격 모드를 켠다.
+  # (zsh에서는 `set -euo pipefail` 형태가 실패할 수 있어서 분기 처리)
+  if set -euo pipefail 2>/dev/null; then
+    :
+  else
+    set -euo
+    set -o pipefail
+  fi
+
+  # 함수가 끝나면(성공/실패/return 모두) 원래 쉘 옵션을 복구
+  trap 'eval "$__wt_shell_opts" 2>/dev/null || true; trap - RETURN' RETURN
 
   if [[ -z "${TMUX:-}" ]]; then
     echo "This function can only run inside a tmux session."
@@ -172,7 +189,12 @@ case "$ANS" in
     ;;
 esac
 
-exit "$STATUS"
+# 마지막 윈도우일 때 세션이 통째로 종료되는 것을 피하려고,
+# 여기서 프로세스를 종료(exit)하지 않고 로그인 쉘로 돌아간다.
+# (원하면 Ctrl-D 또는 `exit`로 직접 닫으면 됨)
+echo
+echo "[worktree] command exit status: $STATUS"
+exec bash -l
 '
 
   tmux new-window -t ":$INDEX" -n "$WIN_NAME" -c "$WT_PATH" "${ENV_PREFIX}bash -lc $(printf '%q' "$TMUX_SCRIPT")"
