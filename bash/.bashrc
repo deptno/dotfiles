@@ -1,5 +1,3 @@
-export PATH="$HOME/.opencode/bin:$PATH"
-
 alias gpr='git pull --rebase --autostash'
 alias gp='git push'
 alias lz='lazygit'
@@ -79,26 +77,26 @@ wt() {
     while true; do
       read -r -p "> " CHOICE
       case "$CHOICE" in
-        r|R)
-          if ! is_registered_worktree; then
-            echo "This path is not a registered git worktree. Cannot reuse."
-            echo "Choose [d] delete and recreate or [c] cancel."
-            continue
-          fi
-          MODE="reuse"
-          break
-          ;;
-        d|D)
-          MODE="recreate"
-          break
-          ;;
-        c|C)
-          echo "Canceled."
-          return 0
-          ;;
-        *)
-          echo "Enter one of: r / d / c"
-          ;;
+      r | R)
+        if ! is_registered_worktree; then
+          echo "This path is not a registered git worktree. Cannot reuse."
+          echo "Choose [d] delete and recreate or [c] cancel."
+          continue
+        fi
+        MODE="reuse"
+        break
+        ;;
+      d | D)
+        MODE="recreate"
+        break
+        ;;
+      c | C)
+        echo "Canceled."
+        return 0
+        ;;
+      *)
+        echo "Enter one of: r / d / c"
+        ;;
       esac
     done
   fi
