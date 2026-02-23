@@ -33,6 +33,7 @@ wt() {
   fi
 
   mkdir -p "$WORKTREE_ROOT"
+  git -C "$REPO_ROOT" worktree prune --expire now >/dev/null 2>&1 || true
 
   local RUN_CMD
   if [[ $# -eq 0 ]]; then
@@ -58,6 +59,17 @@ wt() {
     git -C "$REPO_ROOT" worktree list --porcelain |
       awk '$1=="worktree"{print $2}' |
       grep -Fxq "$WT_PATH"
+  }
+
+  delete_branch_if_exists() {
+    if git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$BRANCH"; then
+      git -C "$REPO_ROOT" worktree prune --expire now >/dev/null 2>&1 || true
+      if ! git -C "$REPO_ROOT" branch -D "$BRANCH" >/dev/null 2>&1; then
+        echo "브랜치 정리에 실패했습니다: $BRANCH"
+        echo '먼저 `git worktree list` 결과를 확인해주세요.'
+        return 1
+      fi
+    fi
   }
 
   local MODE
@@ -102,12 +114,12 @@ wt() {
     else
       rm -rf "$WT_PATH"
     fi
-    git -C "$REPO_ROOT" branch -D "$BRANCH" >/dev/null 2>&1 || true
+    delete_branch_if_exists || return 1
     MODE='create'
   fi
 
   if [[ "$MODE" == 'create' ]]; then
-    git -C "$REPO_ROOT" branch -D "$BRANCH" >/dev/null 2>&1 || true
+    delete_branch_if_exists || return 1
     if ! git -C "$REPO_ROOT" worktree add -b "$BRANCH" "$WT_PATH" HEAD; then
       echo 'worktree 생성에 실패했습니다.'
       return 1
