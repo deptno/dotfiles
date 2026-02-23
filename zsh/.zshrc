@@ -364,6 +364,6 @@ export PATH="$PATH:/Users/deptno/.lmstudio/bin"
 
 if [[ -f "$HOME/wt.sh" ]]; then
   source "$HOME/wt.sh"
-elif [[ -f "$HOME/dotfiles/shell/wt.sh" ]]; then
-  source "$HOME/dotfiles/shell/wt.sh"
+elif [[ -f "$HOME/dotfiles/shell/scripts/wt.sh" ]]; then
+  source "$HOME/dotfiles/shell/scripts/wt.sh"
 fi
