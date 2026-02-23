@@ -177,7 +177,7 @@ echo "[worktree] command exit status: $STATUS"
 exec "${SHELL:-/bin/bash}" -l
 '
 
-  tmux new-window -t ":$INDEX" -c "$WT_PATH" "${ENV_PREFIX}bash -lc $(printf '%q' "$TMUX_SCRIPT")"
+  tmux new-window -t ":$INDEX" -n '' -c "$WT_PATH" "${ENV_PREFIX}bash -lc $(printf '%q' "$TMUX_SCRIPT")"
   tmux select-window -t ":$INDEX"
 
   echo "사용 INDEX: $INDEX"
