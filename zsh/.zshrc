@@ -310,23 +310,91 @@ dup() {
     return 1
   fi
 
+  local label="app=devpod-${num}"
+  local provider_status=0
+  local devpod_status=0
+  local wait_status=0
+  local cp_status=0
+  local pod=""
+  local pod_lookup_attempt=0
+
   devpod provider set-options kubernetes \
-    -o LABELS="app=devpod-${num}" \
-    -o POD_MANIFEST_TEMPLATE="$template_path" \
-  && devpod up "$@"
+    -o LABELS="$label" \
+    -o POD_MANIFEST_TEMPLATE="$template_path"
+  provider_status=$?
 
-  if [ $? -eq 0 ]; then
-    kubectl wait -n devpod --for=condition=Ready pod -l app=devpod-${num} --timeout=60s
-
-    POD=$(kubectl get pods -n devpod -l app=devpod-${num} \
-      -o jsonpath="{.items[0].metadata.name}")
-
-    kubectl cp \
-      -n devpod \
-      -c codex \
-      ~/.config/opencode/opencode.json \
-      $POD:/root/.config/opencode/opencode.json
+  if [ $provider_status -ne 0 ]; then
+    return $provider_status
   fi
+
+  devpod up "$@"
+  devpod_status=$?
+
+  if [ $devpod_status -ne 0 ]; then
+    echo "[dup] warn: devpod up failed with status ${devpod_status}"
+    echo "[dup] warn: checking whether pod ${label} is still available"
+  fi
+
+  while [ $pod_lookup_attempt -lt 12 ]; do
+    pod=$(kubectl get pods -n devpod -l "$label" \
+      -o jsonpath="{.items[0].metadata.name}" 2>/dev/null)
+
+    if [ ! -z "$pod" ]; then
+      break
+    fi
+
+    pod_lookup_attempt=$((pod_lookup_attempt + 1))
+    sleep 5
+  done
+
+  if [ -z "$pod" ]; then
+    if [ $devpod_status -ne 0 ]; then
+      echo "[dup] warn: no pod found for ${label}, skipping kubectl cp"
+      return $devpod_status
+    fi
+
+    echo "[dup] error: no pod found for ${label}"
+    return 1
+  fi
+
+  kubectl wait -n devpod --for=condition=Ready "pod/${pod}" --timeout=60s >/dev/null 2>&1
+  wait_status=$?
+
+  if [ $wait_status -ne 0 ]; then
+    if [ $devpod_status -ne 0 ]; then
+      echo "[dup] warn: pod ${pod} did not become Ready, skipping kubectl cp"
+      return $devpod_status
+    fi
+
+    echo "[dup] error: pod ${pod} did not become Ready"
+    return $wait_status
+  fi
+
+  if [ $devpod_status -ne 0 ]; then
+    echo "[dup] warn: pod ${pod} is Ready, continuing with kubectl cp"
+  fi
+
+  kubectl cp \
+    -n devpod \
+    -c codex \
+    ~/.config/opencode/opencode.json \
+    "${pod}:/root/.config/opencode/opencode.json"
+  cp_status=$?
+
+  if [ $cp_status -ne 0 ]; then
+    if [ $devpod_status -ne 0 ]; then
+      echo "[dup] warn: kubectl cp failed with status ${cp_status}"
+      return $devpod_status
+    fi
+
+    return $cp_status
+  fi
+
+  if [ $devpod_status -ne 0 ]; then
+    echo "[dup] warn: kubectl cp completed, but returning devpod up status ${devpod_status}"
+  fi
+
+  return $devpod_status
 }
 dpac () {
   if [ -z "$2" ]; then
