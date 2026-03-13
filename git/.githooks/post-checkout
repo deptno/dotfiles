@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+
+OLD_HEAD="${1:-}"
+NEW_HEAD="${2:-}"
+CHECKOUT_TYPE="${3:-}"
+NULL_REF='0000000000000000000000000000000000000000'
+
+if [[ "$CHECKOUT_TYPE" != '1' ]]; then
+  exit 0
+fi
+
+if [[ "$OLD_HEAD" != "$NULL_REF" ]]; then
+  exit 0
+fi
+
+CURRENT_WORKTREE_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+COMMON_GIT_DIR="$(
+  git rev-parse --path-format=absolute --git-common-dir 2>/dev/null ||
+    git rev-parse --git-common-dir 2>/dev/null
+)" || exit 0
+MAIN_WORKTREE_ROOT="${COMMON_GIT_DIR%/.git}"
+
+if [[ -z "$CURRENT_WORKTREE_ROOT" || -z "$MAIN_WORKTREE_ROOT" ]]; then
+  exit 0
+fi
+
+if [[ "$CURRENT_WORKTREE_ROOT" == "$MAIN_WORKTREE_ROOT" ]]; then
+  exit 0
+fi
+
+if [[ ! -d "$MAIN_WORKTREE_ROOT" ]]; then
+  exit 0
+fi
+
+copy_env_files() {
+  local source_file target_file copied_any
+
+  copied_any=0
+
+  while IFS= read -r -d '' source_file; do
+    target_file="$CURRENT_WORKTREE_ROOT/${source_file##*/}"
+
+    if cp -f "$source_file" "$target_file"; then
+      copied_any=1
+      continue
+    fi
+
+    printf '[post-checkout] .env* 복사 실패: %s\n' "$source_file" >&2
+  done < <(
+    find "$MAIN_WORKTREE_ROOT" \
+      -maxdepth 1 \
+      -type f \
+      -name '.env*' \
+      -print0 2>/dev/null
+  )
+
+  if [[ "$copied_any" == '1' ]]; then
+    printf '[post-checkout] .env* 복사 완료: %s -> %s\n' \
+      "$MAIN_WORKTREE_ROOT" \
+      "$CURRENT_WORKTREE_ROOT"
+  fi
+}
+
+link_node_modules() {
+  local source_node_modules relative_path target_node_modules linked_target linked_any
+
+  linked_any=0
+
+  while IFS= read -r -d '' source_node_modules; do
+    relative_path="${source_node_modules#"$MAIN_WORKTREE_ROOT"/}"
+    target_node_modules="$CURRENT_WORKTREE_ROOT/$relative_path"
+
+    mkdir -p "$(dirname "$target_node_modules")" || {
+      printf '[post-checkout] 디렉토리 생성 실패: %s\n' "$target_node_modules" >&2
+      continue
+    }
+
+    if [[ -L "$target_node_modules" ]]; then
+      linked_target="$(readlink "$target_node_modules" 2>/dev/null || true)"
+
+      if [[ "$linked_target" == "$source_node_modules" ]]; then
+        continue
+      fi
+
+      printf '[post-checkout] 기존 심볼릭 링크가 있어 건너뜀: %s\n' \
+        "$target_node_modules" >&2
+      continue
+    fi
+
+    if [[ -e "$target_node_modules" ]]; then
+      printf '[post-checkout] 기존 경로가 있어 건너뜀: %s\n' \
+        "$target_node_modules" >&2
+      continue
+    fi
+
+    if ln -s "$source_node_modules" "$target_node_modules"; then
+      linked_any=1
+      continue
+    fi
+
+    printf '[post-checkout] node_modules 링크 생성 실패: %s\n' \
+      "$target_node_modules" >&2
+  done < <(
+    find "$MAIN_WORKTREE_ROOT" \
+      \( -type d \( -name '.git' -o -name '.worktrees' \) -prune \) -o \
+      \( -type d -name 'node_modules' -prune -print0 \) 2>/dev/null
+  )
+
+  if [[ "$linked_any" == '1' ]]; then
+    printf '[post-checkout] node_modules 링크 완료: %s -> %s\n' \
+      "$MAIN_WORKTREE_ROOT" \
+      "$CURRENT_WORKTREE_ROOT"
+  fi
+}
+
+copy_env_files
+link_node_modules

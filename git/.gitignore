@@ -1,6 +1,8 @@
 *
 !.gitignore*
 !.gitconfig*
+!.githooks/
+!.githooks/**/*
 !.config/
 !.config/alacritty/**/*
 !.config/nvim
